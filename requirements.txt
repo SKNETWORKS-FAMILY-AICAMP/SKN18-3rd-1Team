@@ -1,20 +1,34 @@
-jupyter==1.1.1 # 주피터 노트북
-python-dotenv==1.1.1 # 환경 변수 관리
+# ------------------------------------------------------
+# 🧠 Core Environment
+# ------------------------------------------------------
+jupyter==1.1.1              # 주피터 노트북
+python-dotenv==1.0.1        # 환경 변수 관리 (1.1.1은 베타 버전. 안정성 위해 1.0.1 추천)
 
-# LangChain 패키지
-langchain==0.3.26 # LangChain 메인 패키지
-langchain-core==0.3.74 # LangChain 코어 기능
-langchain-community==0.3.27 # LangChain 커뮤니티 확장
-langchain-experimental==0.3.4 # 새로운 기능을 미리 사용해볼 수 있는 패키지
-langsmith==0.4.14 # LangChain 앱 디버깅, 테스트, 모니터링 도구
-langgraph==0.2.61 # 복잡한 AI 워크플로우를 그래프로 만드는 도구
+# ------------------------------------------------------
+# 🧩 LangChain & Graph
+# ------------------------------------------------------
+langchain==0.3.26           # LangChain 메인 패키지
+langchain-core==0.3.26      # LangChain 코어 기능 (메인 버전과 동일하게 맞춤)
+langchain-community==0.3.26 # 커뮤니티 확장 모듈
+langchain-experimental==0.3.4
+langsmith==0.4.14           # LangChain 실험/디버깅 도구
+langgraph==0.2.61           # LangGraph (Agent 그래프 구성용)
 
-# 모델별 패키지
-langchain-openai==0.3.8 # OpenAI 모델 통합
+# ------------------------------------------------------
+# 🤖 Model Integration
+# ------------------------------------------------------
+langchain-openai==0.3.8     # OpenAI API 통합 (ChatOpenAI 사용)
+openai==1.58.1              # OpenAI SDK 명시 (langchain-openai 내부에서 참조됨)
 
-# 벡터DB 패키지
-pgvector==0.4.1 
-psycopg2-binary==2.9.10
+# ------------------------------------------------------
+# 🧮 VectorDB / Database
+# ------------------------------------------------------
+pgvector==0.4.1             # PostgreSQL 벡터 확장
+psycopg2-binary==2.9.10     # PostgreSQL 드라이버
 
-# Tools 패키지
-tavily-python==0.7.10 #  AI가 웹 검색을 할 수 있게 해주는 도구
+# ------------------------------------------------------
+# 🔧 Tools & Utilities
+# ------------------------------------------------------
+tavily-python==0.7.10       # LangChain Tool (웹 검색용)
+tqdm==4.66.4                # 진행률 표시 (insert_vectordb.py에서 사용)
+pandas==2.2.3               # CSV 데이터 처리
