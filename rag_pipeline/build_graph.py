@@ -1,6 +1,6 @@
 import sys, os
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), "rag_pipline"))
+sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), "rag_pipeline"))
 
 from langgraph.graph import StateGraph, END
 from typing import TypedDict, List, Any
@@ -9,11 +9,11 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # === Import all nodes ===
-from rag_pipline.nodes.query_classifier_node import QueryClassifierNode
-from rag_pipline.nodes.search_vectordb_node import SearchVectorDBNode
-from rag_pipline.nodes.evaluation_node import EvaluationNode
-from rag_pipline.nodes.rewrite_node import RewriteNode
-from rag_pipline.nodes.create_node import CreateNode
+from nodes.query_classifier_node import QueryClassifierNode
+from nodes.search_vectordb_node import SearchVectorDBNode
+from nodes.evaluation_node import EvaluationNode
+from nodes.rewrite_node import RewriteNode
+from nodes.create_node import CreateNode
 
 
 # ===========================================

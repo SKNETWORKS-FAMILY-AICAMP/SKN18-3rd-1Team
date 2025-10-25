@@ -1,11 +1,10 @@
--- pgvector 확장 활성화
+-- 1️⃣ pgvector 확장 설치
 CREATE EXTENSION IF NOT EXISTS vector;
 
-CREATE TABLE IF NOT EXISTS insurance_embeddings (
-    unique_id TEXT PRIMARY KEY,
-    company TEXT,
-    product TEXT,
-    clause TEXT,
-    content TEXT,
-    embedding VECTOR(3072)
+
+CREATE TABLE insurance_embeddings (
+    id SERIAL PRIMARY KEY,           -- 고유 ID
+    content TEXT,                    -- 약관 텍스트
+    embedding VECTOR(3072),          -- OpenAI text-embedding-3-large
+    metadata JSONB                   -- 회사명 / 보험명 / 조항 등 메타데이터
 );

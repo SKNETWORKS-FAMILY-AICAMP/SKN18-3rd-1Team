@@ -1,6 +1,9 @@
 """
 LangGraph 전체 파이프라인 실행 파일
 """
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'rag_pipeline'))
 
 from build_graph import build_graph
 from pprint import pprint
@@ -13,7 +16,7 @@ app = graph.compile()
 
 # 초기 상태
 state = {
-    "user_input": "삼성화재 자동차보험 대물배상 한도 알려줘",
+    "user_input": "나 지금 삼성화재 보험 가입해있는데 다른 자동차 보험 뭐 가입할만한거 있을까?",
     "retry_count": 0
 }
 

@@ -1,6 +1,10 @@
 """
 그래프 그리기
 """
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'rag_pipeline'))
+
 from build_graph import build_graph
 
 CONN_STR = "postgresql://admin:admin123@localhost:5432/UNITvectordb"

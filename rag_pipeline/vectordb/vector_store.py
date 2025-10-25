@@ -1,52 +1,36 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-📘 build_pgvector_from_csv_manual.py
-─────────────────────────────────────────────
-LangChain 자동 저장 ❌  
-직접 테이블 생성 + 임베딩 + INSERT 방식으로 저장 ✅
-─────────────────────────────────────────────
-"""
-
 import os
-import psycopg2
-import pandas as pd
 import json
+import pandas as pd
+import psycopg2
 from dotenv import load_dotenv
 from pgvector.psycopg2 import register_vector
+from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_openai import OpenAIEmbeddings
 from tqdm import tqdm
 
 # =====================================
-# 1️⃣ 환경 변수 로드
+# 1️⃣ 환경 변수 및 설정
 # =====================================
 load_dotenv(dotenv_path=".env")
 OPENAI_KEY = os.getenv("OPENAI_API_KEY")
 assert OPENAI_KEY, "❌ OPENAI_API_KEY가 설정되지 않았습니다 (.env 확인)."
 
-# =====================================
-# 2️⃣ PostgreSQL 연결 설정
-# =====================================
 CONNECTION_STRING = "postgresql://admin:admin123@localhost:5432/UNITvectordb"
 TABLE_NAME = "insurance_embeddings"
-CSV_PATH = "data/insurance_clauses_chunked.csv"
-
+CSV_PATH = "data/insurance_clauses.csv"
 
 # =====================================
-# 3️⃣ pgvector 확장 + 테이블 생성
+# 2️⃣ pgvector 테이블 준비
 # =====================================
 def setup_pgvector_and_table():
     conn = psycopg2.connect(CONNECTION_STRING)
     conn.autocommit = True
-    cursor = conn.cursor()
+    cur = conn.cursor()
     register_vector(conn)
 
-    # pgvector 확장 설치
-    cursor.execute("CREATE EXTENSION IF NOT EXISTS vector;")
-
-    # 기존 테이블 있으면 삭제하고 새로 생성
-    cursor.execute(f"DROP TABLE IF EXISTS {TABLE_NAME};")
-    cursor.execute(f"""
+    cur.execute("CREATE EXTENSION IF NOT EXISTS vector;")
+    cur.execute(f"DROP TABLE IF EXISTS {TABLE_NAME};")
+    cur.execute(f"""
         CREATE TABLE {TABLE_NAME} (
             id SERIAL PRIMARY KEY,
             content TEXT,
@@ -55,40 +39,54 @@ def setup_pgvector_and_table():
         );
     """)
     print(f"✅ '{TABLE_NAME}' 테이블 생성 완료")
-    cursor.close()
+    cur.close()
     conn.close()
 
-
 # =====================================
-# 4️⃣ CSV 불러오기
+# 3️⃣ CSV 로드 및 청크 분할
 # =====================================
-def load_csv(csv_path: str):
+def load_and_split_csv(csv_path: str):
     df = pd.read_csv(csv_path)
-    print(f"📊 CSV 로드 완료: {len(df)}개 행")
+    print(f"📊 원본 CSV 로드: {len(df)}행")
+
+    splitter = RecursiveCharacterTextSplitter(
+        chunk_size=1000,
+        chunk_overlap=150,
+        separators=["\n\n", "\n", ".", " "]
+    )
 
     records = []
-    for _, row in df.iterrows():
-        text = str(row.get("내용_chunk", "")).strip()
-        if not text or len(text) < 10:
+    for idx, row in tqdm(df.iterrows(), total=len(df), desc="텍스트 분할 중"):
+        content = str(row.get("내용", "")).strip()
+        if not content or content.lower() == "nan":
             continue
-        meta = {
-            "보험사명": row.get("보험사명", ""),
-            "상품명": row.get("상품명", ""),
-            "조항": row.get("조항(편 장 절 조)", ""),
-            "unique_id": row.get("unique_id", "")
-        }
-        records.append((text, meta))
-    print(f"📄 변환 완료: {len(records)}개 문서")
+
+        chunks = splitter.split_text(content)
+        company = str(row.get("회사명", "")).strip()
+        product = str(row.get("보험명", "")).strip()
+        clause = str(row.get("조항", "")).strip()
+
+        for i, chunk in enumerate(chunks):
+            unique_id = f"{company}_{product}_{clause}_chunk{i+1}"
+            meta = {
+                "회사명": company,
+                "보험명": product,
+                "조항": clause,
+                "row_id": int(idx)
+            }
+            records.append((chunk, meta))
+
+
+    print(f"✅ 분할 완료: {len(records)}개 청크 생성됨")
     return records
 
-
 # =====================================
-# 5️⃣ 임베딩 생성 및 DB 저장
+# 4️⃣ 임베딩 생성 및 DB 저장
 # =====================================
 def insert_embeddings(records):
     conn = psycopg2.connect(CONNECTION_STRING)
     conn.autocommit = True
-    cursor = conn.cursor()
+    cur = conn.cursor()
     register_vector(conn)
 
     embeddings = OpenAIEmbeddings(model="text-embedding-3-large")
@@ -97,22 +95,25 @@ def insert_embeddings(records):
     for i, (text, meta) in enumerate(tqdm(records, desc="Embedding Progress"), start=1):
         try:
             emb_vector = embeddings.embed_query(text)
-            cursor.execute(
+            cur.execute(
                 f"INSERT INTO {TABLE_NAME} (content, embedding, metadata) VALUES (%s, %s, %s)",
-                (text, emb_vector, json.dumps(meta))
+                (text, emb_vector, json.dumps(meta, ensure_ascii=False))
             )
         except Exception as e:
             print(f"⚠️ 오류 (행 {i}): {e}")
+
     print(f"✅ {len(records)}개 데이터 저장 완료!")
-    cursor.close()
+    cur.close()
     conn.close()
 
-
 # =====================================
-# 6️⃣ 전체 파이프라인 실행
+# 5️⃣ 메인 실행
 # =====================================
-if __name__ == "__main__":
+def main():
     setup_pgvector_and_table()
-    records = load_csv(CSV_PATH)
+    records = load_and_split_csv(CSV_PATH)
     insert_embeddings(records)
-    print("\n🎉 전체 과정 완료!")
+    print("\nvectordb 구축 완료")
+
+if __name__ == "__main__":
+    main()
