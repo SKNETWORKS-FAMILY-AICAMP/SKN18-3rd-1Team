@@ -60,5 +60,8 @@ class QueryClassifierNode:
 
         state["query_type"] = query_type
         state["companies"] = companies
-        print(f"🧠 query_type={query_type}, companies={companies}")
+
+        state["is_rag_eligible"] = query_type in ["single", "comparison"]
+
+        print(f"🧠 query_type={query_type}, companies={companies}, is_rag_eligible={state['is_rag_eligible']}")
         return state

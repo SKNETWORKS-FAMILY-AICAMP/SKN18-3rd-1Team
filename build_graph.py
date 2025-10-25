@@ -9,7 +9,6 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # === Import all nodes ===
-from rag_pipline.nodes.domain_filter_node import DomainFilterNode
 from rag_pipline.nodes.query_classifier_node import QueryClassifierNode
 from rag_pipline.nodes.search_vectordb_node import SearchVectorDBNode
 from rag_pipline.nodes.evaluation_node import EvaluationNode
@@ -36,20 +35,37 @@ class GraphState(TypedDict):
 
 
 # ===========================================
-# ✅ 그래프 빌드 함수
+# 조건 함수
+# ===========================================
+def is_classifier_yes(state: GraphState) -> str:
+    """분류 결과에 따라 RAG 수행 여부 결정"""
+    if state.get("is_rag_eligible", False):
+        return "search_vectordb"
+    return "end"
+
+
+def is_evaluation_yes(state: GraphState) -> str:
+    """검색 결과의 적합도 평가 후 흐름 결정"""
+    if state.get("is_relevant", False):
+        return "create_answer"
+    elif state.get("retry_count", 0) < 1:
+        return "rewriting_question"
+    return "end"
+
+
+# ===========================================
+# 그래프 빌드 함수
 # ===========================================
 def build_graph(conn_str: str):
     graph = StateGraph(GraphState)
 
     # --- 노드 등록 ---
-    filter_node = DomainFilterNode()
     classifier = QueryClassifierNode()
     search = SearchVectorDBNode(conn_str=conn_str)
     eval_node = EvaluationNode(threshold=0.7)
     rewrite = RewriteNode(max_retry=1)
     creator = CreateNode()
 
-    graph.add_node("filter", filter_node)
     graph.add_node("classifier", classifier)
     graph.add_node("search_vectordb", search)
     graph.add_node("evaluation", eval_node)
@@ -57,52 +73,37 @@ def build_graph(conn_str: str):
     graph.add_node("create_answer", creator)
 
     # ===========================================
-    # ✅ 1️⃣ filter 노드 — 보험 관련 여부 판단
+    # ✅ 1️⃣ classifier → (search_vectordb or END)
     # ===========================================
-    def route_from_filter(state: GraphState):
-        if state.get("is_rag_eligible", False):
-            return "yes"
-        else:
-            return "no"
-
     graph.add_conditional_edges(
-        "filter",
-        route_from_filter,
+        "classifier",
+        is_classifier_yes,
         {
-            "yes": "classifier",
-            "no": END
-        }
+            "search_vectordb": "search_vectordb",
+            "end": END,
+        },
     )
 
     # ===========================================
-    # ✅ 2️⃣ classifier → search → evaluation
+    # ✅ 2️⃣ search → evaluation
     # ===========================================
-    graph.add_edge("classifier", "search_vectordb")
     graph.add_edge("search_vectordb", "evaluation")
 
     # ===========================================
     # ✅ 3️⃣ evaluation → rewrite / create / END
     # ===========================================
-    def route_after_eval(state: GraphState):
-        if state.get("is_relevant", False):
-            return "create_answer"
-        elif state.get("retry_count", 0) < 1:
-            return "rewriting_question"
-        else:
-            return "end"
-
     graph.add_conditional_edges(
         "evaluation",
-        route_after_eval,
+        is_evaluation_yes,
         {
             "create_answer": "create_answer",
             "rewriting_question": "rewriting_question",
-            "end": END
-        }
+            "end": END,
+        },
     )
 
     # ===========================================
-    # ✅ 4️⃣ rewrite → classifier (재분류 후 재검색)
+    # ✅ 4️⃣ rewrite → classifier
     # ===========================================
     graph.add_edge("rewriting_question", "classifier")
 
@@ -114,6 +115,6 @@ def build_graph(conn_str: str):
     # ===========================================
     # ✅ Entry Point
     # ===========================================
-    graph.set_entry_point("filter")
+    graph.set_entry_point("classifier")
 
     return graph

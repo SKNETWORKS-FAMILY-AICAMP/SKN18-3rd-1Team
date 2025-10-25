@@ -1,10 +1,5 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
-📘 run_graph.py
-──────────────────────────────────────────────
 LangGraph 전체 파이프라인 실행 파일
-──────────────────────────────────────────────
 """
 
 from build_graph import build_graph
@@ -27,3 +22,6 @@ final_state = app.invoke(state)
 
 print("\n🎯 최종 결과")
 pprint(final_state.get("final_answer", "답변 생성 실패"))
+print("\n🎯 최종 상태 전체 확인")
+from pprint import pprint
+pprint(final_state)
