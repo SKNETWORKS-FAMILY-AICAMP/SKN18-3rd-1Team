@@ -1,7 +1,5 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
-📘 SearchVectorDBNode
+SearchVectorDBNode
 ──────────────────────────────────────────────
 분류된 질의 결과에 따라 PGVector에서 유사 청크 검색 수행
 (single: 단일 보험사 / comparison: 여러 보험사)

@@ -1,10 +1,9 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
-📘 QueryClassifierNode
+QueryClassifierNode
 ──────────────────────────────────────────────
 사용자의 질문이 단일 보험사 관련인지, 여러 보험사 비교인지, 기타인지 분류하고
 해당 보험사 목록(companies)을 함께 추출
+기타일 경우는 END
 ──────────────────────────────────────────────
 """
 from openai import OpenAI

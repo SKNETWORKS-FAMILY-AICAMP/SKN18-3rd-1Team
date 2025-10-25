@@ -1,11 +1,9 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
-📘 EvaluationNode (단일 + 비교 통합)
+EvaluationNode 
 ──────────────────────────────────────────────
 검색된 문서(청크)가 질문과 얼마나 관련이 있는지를 평가하고,
 유의미한 청크가 하나라도 있으면 CreateNode로,
-없으면 RewriteNode로 이동하도록 결정.
+없으면 RewriteNode로 이동
 ──────────────────────────────────────────────
 """
 from openai import OpenAI
