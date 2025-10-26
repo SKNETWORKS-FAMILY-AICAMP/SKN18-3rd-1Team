@@ -174,7 +174,7 @@ def main():
     """메인 실행 함수"""
     base_dir = pathlib.Path(__file__).parent
     data_dir = base_dir / 'data'
-    output_dir = base_dir / 'results' / 'pdftocsv'
+    output_dir = base_dir / 'data'
     output_dir.mkdir(parents=True, exist_ok=True)
 
     # CSV 파일 초기화 (헤더 작성)
