@@ -29,3 +29,5 @@ test_output/
 Thumbs.db
 # PostgreSQL database files (only exclude the running database data)
 pgvector/database/
+
+__database__/
