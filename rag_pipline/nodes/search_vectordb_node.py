@@ -33,11 +33,17 @@ class SearchVectorDBNode:
             comp = companies[0]
             results = self.vectorstore.similarity_search(
                 query=query,
-                k=5,
+                k=10,
                 filter={"회사명": comp}
             )
             state["retrieved_docs"] = results
+
             print(f"✅ [{comp}] 관련 문서 {len(results)}개 검색 완료")
+            # ✅ 청크 내용 디버깅 출력
+            for i, doc in enumerate(results, start=1):
+                print(f"\n--- 📄 청크 {i} ---")
+                print(f"내용: {getattr(doc, 'content', str(doc))[:300]}...")  # 내용 일부 미리보기
+                print(f"메타데이터: {getattr(doc, 'metadata', {})}")
 
         # --- 여러 보험사 비교 검색 ---
         elif query_type == "comparison":
@@ -45,11 +51,17 @@ class SearchVectorDBNode:
             for comp in companies:
                 results = self.vectorstore.similarity_search(
                     query=query,
-                    k=5,
+                    k=10,
                     filter={"회사명": comp}
                 )
                 comparison_results[comp] = results
-                print(f"🔹 {comp}: {len(results)}개 문서 검색됨")
+                print(f"\n🔹 {comp}: {len(results)}개 문서 검색됨")
+
+                # ✅ 청크 내용 디버깅 출력
+                for i, doc in enumerate(results, start=1):
+                    print(f"   ├─ 📄 청크 {i}")
+                    print(f"      내용: {getattr(doc, 'content', str(doc))[:200]}...")
+                    print(f"      메타데이터: {getattr(doc, 'metadata', {})}")
 
             state["retrieved_docs"] = comparison_results
             print(f"✅ 비교 검색 완료 ({len(companies)}개 보험사 포함)")

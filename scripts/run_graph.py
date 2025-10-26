@@ -1,11 +1,13 @@
 from rag_pipline.build_graph import build_graph
+from vectordb.custom_pgvector import CustomPGVector  # ✅ 추가
 from pprint import pprint
 
 CONN_STR = "postgresql://admin:admin123@localhost:5432/UNITvectordb"
 
 def run_pipeline(user_input: str):
     """사용자 질문을 받아 LangGraph 파이프라인 실행"""
-    graph = build_graph(conn_str=CONN_STR)
+    vectorstore = CustomPGVector(CONN_STR)   # ✅ DB 연결 1회 생성
+    graph = build_graph(vectorstore)         # ✅ 연결 인스턴스 주입
     app = graph.compile()
 
     state = {"user_input": user_input, "retry_count": 0}
