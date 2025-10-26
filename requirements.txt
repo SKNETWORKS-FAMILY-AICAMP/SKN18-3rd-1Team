@@ -30,6 +30,8 @@ openai
 ragas==0.3.5
 tqdm
 
+streamlit==1.39.0
+
 #------------------------------------------------------------------
 #rank-bm25
 #sentence-transformers
