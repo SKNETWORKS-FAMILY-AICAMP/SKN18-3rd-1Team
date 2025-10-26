@@ -1,19 +1,35 @@
-.claude
-
+# Python
 .venv
-
-.env
-
-src
-
 __pycache__/
-
 *.pyc
+*.pyo
+*.pyd
+.Python
 
-dataset
+# Environment
+.env
+.env.local
 
-pgvector
+# IDE
+.claude
+.vscode/
+.idea/
 
-logs
+# Data directories
+my_data/
+conv/
+processed/
+test_output/
 
+# Logs
+*.log
 
+# OS
+.DS_Store
+Thumbs.db
+# PostgreSQL database files (only exclude the running database data)
+pgvector/database/
+
+__database__/
+
+database
