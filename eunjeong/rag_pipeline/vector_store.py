@@ -19,6 +19,7 @@ CONNECTION_STRING = "postgresql://admin:admin123@localhost:5432/UNITvectordb"
 TABLE_NAME = "insurance_embeddings"
 CSV_PATH = "data/insurance_clauses.csv"
 
+
 # =====================================
 # 2️⃣ pgvector 테이블 준비
 # =====================================
