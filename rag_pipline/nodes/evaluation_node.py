@@ -67,6 +67,7 @@ class EvaluationNode:
             state["meaningful_chunks"] = []
         return state
 
+# Prompt 수정하기
     def _evaluate(self, query, content):
         prompt = f"질문: {query}\n문서: {content[:700]}\n\n관련성 점수를 0~1 사이로 출력해."
         res = client.chat.completions.create(

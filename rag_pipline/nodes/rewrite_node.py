@@ -41,6 +41,7 @@ class RewriteNode:
 
         print(f"\n📝 [RewriteNode] 평가 미달 → 질문 리라이트 중... (시도 {retry_count + 1}/{self.max_retry})")
 
+# prompt 재작성 필요
         if query_type == "single":
             prompt = f"""
             사용자의 질문이 특정 보험사 관련으로 너무 모호합니다.

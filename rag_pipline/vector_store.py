@@ -11,13 +11,14 @@ from tqdm import tqdm
 # =====================================
 # 1️⃣ 환경 변수 및 설정
 # =====================================
-load_dotenv(dotenv_path=".env")
+env_path = os.path.join(os.path.dirname(__file__), '..', '.env')
+load_dotenv(dotenv_path=env_path)
 OPENAI_KEY = os.getenv("OPENAI_API_KEY")
 assert OPENAI_KEY, "❌ OPENAI_API_KEY가 설정되지 않았습니다 (.env 확인)."
 
 CONNECTION_STRING = "postgresql://admin:admin123@localhost:5432/UNITvectordb"
 TABLE_NAME = "insurance_embeddings"
-CSV_PATH = "data/insurance_clauses.csv"
+CSV_PATH = os.path.join(os.path.dirname(__file__), '..', 'data', 'insurance_clauses.csv')
 
 
 # =====================================

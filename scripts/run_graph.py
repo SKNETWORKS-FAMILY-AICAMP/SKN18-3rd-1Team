@@ -1,11 +1,9 @@
 """
 LangGraph 전체 파이프라인 실행 파일
 """
-import sys
 import os
-sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'rag_pipeline'))
 
-from build_graph import build_graph
+from rag_pipline.build_graph import build_graph
 from pprint import pprint
 
 CONN_STR = "postgresql://admin:admin123@localhost:5432/UNITvectordb"

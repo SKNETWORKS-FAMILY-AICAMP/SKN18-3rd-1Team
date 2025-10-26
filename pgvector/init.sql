@@ -1,13 +1,10 @@
+-- 1️⃣ pgvector 확장 설치
 CREATE EXTENSION IF NOT EXISTS vector;
 
-CREATE TABLE IF NOT EXISTS insurance_vectordb (
-    id SERIAL PRIMARY KEY,
-    clause TEXT NOT NULL,
-    embedding VECTOR(1536),
-    metadata JSONB NOT NULL
-);
 
-CREATE INDEX IF NOT EXISTS idx_insurance_vectordb_embedding
-ON insurance_vectordb
-USING ivfflat (embedding vector_l2_ops)
-WITH (lists = 100);
+CREATE TABLE insurance_embeddings (
+    id SERIAL PRIMARY KEY,           -- 고유 ID
+    content TEXT,                    -- 약관 텍스트
+    embedding VECTOR(3072),          -- OpenAI text-embedding-3-large
+    metadata JSONB                   -- 회사명 / 보험명 / 조항 등 메타데이터
+);
