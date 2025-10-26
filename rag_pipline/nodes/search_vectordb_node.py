@@ -5,39 +5,58 @@ SearchVectorDBNode
 (single: 단일 보험사 / comparison: 여러 보험사)
 ──────────────────────────────────────────────
 """
-from vectordb.custom_pgvector import CustomPGVector
-
 
 class SearchVectorDBNode:
     """단일 + 비교 질의 통합 검색 노드"""
 
-    def __init__(self, conn_str: str):
-        self.vectorstore = CustomPGVector(conn_str)
+    def __init__(self, vectorstore):
+        """
+        기존: conn_str를 받아 내부에서 CustomPGVector를 생성했음
+        변경: 이미 연결된 vectorstore 인스턴스를 받아 재사용
+        """
+        self.vectorstore = vectorstore  # ✅ 기존 conn_str → vectorstore
 
     def __call__(self, state):
-        query = state["user_input"]
+        query = state.get("user_input", "").strip()
         query_type = state.get("query_type")
         companies = state.get("companies", [])
 
         print(f"\n🔍 [SearchVectorDBNode] query_type={query_type}, companies={companies}")
 
+        # --- 단일 보험사 검색 ---
         if query_type == "single":
             if not companies:
+                print("⚠️ 보험사 정보 없음 — 검색 스킵")
                 state["retrieved_docs"] = []
                 return state
+
             comp = companies[0]
-            results = self.vectorstore.similarity_search(query=query, k=5, filter={"회사명": comp})
+            results = self.vectorstore.similarity_search(
+                query=query,
+                k=5,
+                filter={"회사명": comp}
+            )
             state["retrieved_docs"] = results
             print(f"✅ [{comp}] 관련 문서 {len(results)}개 검색 완료")
 
+        # --- 여러 보험사 비교 검색 ---
         elif query_type == "comparison":
             comparison_results = {}
             for comp in companies:
-                comparison_results[comp] = self.vectorstore.similarity_search(query=query, k=5, filter={"회사명": comp})
-                print(f"🔹 {comp}: {len(comparison_results[comp])}개 문서 검색됨")
+                results = self.vectorstore.similarity_search(
+                    query=query,
+                    k=5,
+                    filter={"회사명": comp}
+                )
+                comparison_results[comp] = results
+                print(f"🔹 {comp}: {len(results)}개 문서 검색됨")
+
             state["retrieved_docs"] = comparison_results
             print(f"✅ 비교 검색 완료 ({len(companies)}개 보험사 포함)")
 
+        # --- 기타 (검색 불필요한 질의) ---
         else:
+            print("ℹ️ RAG 비적용 질의 — 검색 스킵")
             state["retrieved_docs"] = []
+
         return state

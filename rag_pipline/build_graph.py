@@ -56,16 +56,21 @@ def is_evaluation_yes(state: GraphState) -> str:
 # ===========================================
 # 그래프 빌드 함수
 # ===========================================
-def build_graph(conn_str: str):
+def build_graph(vectorstore):
+    """
+    이미 생성된 PGVector 인스턴스를 주입받아서 그래프를 빌드함.
+    (Streamlit에서 전역 CustomPGVector 인스턴스를 전달)
+    """
     graph = StateGraph(GraphState)
 
     # --- 노드 등록 ---
     classifier = QueryClassifierNode()
-    search = SearchVectorDBNode(conn_str=conn_str)
+    search = SearchVectorDBNode(vectorstore=vectorstore)  # ✅ 기존 conn_str 대신 vectorstore 주입
     eval_node = EvaluationNode(threshold=0.7)
     rewrite = RewriteNode(max_retry=1)
     creator = CreateNode()
 
+    # --- 노드 추가 ---
     graph.add_node("classifier", classifier)
     graph.add_node("search_vectordb", search)
     graph.add_node("evaluation", eval_node)
@@ -78,10 +83,7 @@ def build_graph(conn_str: str):
     graph.add_conditional_edges(
         "classifier",
         is_classifier_yes,
-        {
-            "search_vectordb": "search_vectordb",
-            "end": END,
-        },
+        {"search_vectordb": "search_vectordb", "end": END},
     )
 
     # ===========================================
