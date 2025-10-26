@@ -32,6 +32,10 @@ tqdm
 
 streamlit==1.39.0
 
+# 전처리
+pymupdf4llm
+PyMuPDF
+
 #------------------------------------------------------------------
 #rank-bm25
 #sentence-transformers
