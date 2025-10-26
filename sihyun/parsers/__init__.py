@@ -29,4 +29,5 @@ __all__ = [
     'SamsungPersonalParser',
     'HanaParser',
     'HyundaiParser',
+    'parse',
 ]
