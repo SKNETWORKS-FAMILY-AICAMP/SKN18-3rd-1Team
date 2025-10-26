@@ -9,7 +9,7 @@ QueryClassifierNode
 from openai import OpenAI
 
 client = OpenAI()
-INSURANCE_COMPANIES = ["현대", "하나", "삼성화재", "KB", "DB", "롯데", "하나"]
+INSURANCE_COMPANIES = ["현대", "삼성화재", "KB", "DB", "롯데", "하나"]
 
 
 class QueryClassifierNode:

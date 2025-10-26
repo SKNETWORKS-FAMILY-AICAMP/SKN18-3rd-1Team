@@ -1,8 +1,7 @@
 """
 CreateNode
 ──────────────────────────────────────────────
-평가 통과(유의미 청크 존재) 시 실제 답변 생성.
-청크 메타데이터(보험사명, 상품명) 포함
+평가 통과(유의미 청크 존재) 시 실제 답변 생성 + 출처 표기.
 ──────────────────────────────────────────────
 """
 from openai import OpenAI
@@ -25,20 +24,23 @@ class CreateNode:
 
         print("\n💬 [CreateNode] 답변 생성 중...")
 
-       # # 청크별 메타데이터와 내용 함께 연결
-       # context = ""
-       # for d in meaningful_chunks:
-       #     company = d.metadata.get("회사명", "Unknown")
-       #     product = d.metadata.get("보험명", "Unknown")
-       #     snippet = d.page_content[:800]
-       #    context += f"[출처] 보험사: {company}, 상품: {product}\n{snippet}\n---\n"
-        context = ""
-        for d in meaningful_chunks:
-            company = d.metadata.get("회사명", "Unknown")
-            product = d.metadata.get("보험명", "Unknown")
-            snippet = d.page_content[:800]  # 최대 800자 제한
-            context += f"[출처] 보험사: {company}, 상품: {product}\n{snippet}\n---\n"
+        # 1️⃣ 문서 내용 + 출처 메타데이터 추출
+        context_parts = []
+        sources = set()
 
+        for d in meaningful_chunks:
+            context_parts.append(d.page_content[:800])
+            meta = d.metadata or {}
+            company = meta.get("회사명")
+            product = meta.get("보험명")
+            if company and product:
+                sources.add(f"{company} - {product}")
+            elif company:
+                sources.add(company)
+
+        context = "\n\n".join(context_parts)
+
+        # 2️⃣ 프롬프트 구성
         if query_type == "comparison":
             prompt = f"""
 당신은 보험 분석 전문가입니다.
@@ -81,6 +83,12 @@ class CreateNode:
         )
 
         answer = res.choices[0].message.content.strip()
+
+        # 4️⃣ 출처 추가
+        if sources:
+            sources_text = "출처: " + ", ".join(sorted(sources))
+            answer = f"{answer}\n\n---\n{sources_text}"
+
         print("✅ 답변 생성 완료.")
         state["final_answer"] = answer
         return state
