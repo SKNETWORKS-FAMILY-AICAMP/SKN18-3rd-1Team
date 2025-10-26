@@ -1,6 +1,6 @@
 # 📁 디렉토리 및 파일 구조
 
-### 🔧 설정 파일들
+### 🔧 설정 파일들  
 - **`.env`** - 환경 변수 설정 (API 키, DB 연결 정보)
 - **`.gitignore`** - Git 버전 관리에서 제외할 파일 목록
 - **`requirements.txt`** - Python 패키지 의존성 목록 (LangChain, OpenAI, pgvector 등)
