@@ -303,7 +303,7 @@ project_root/
 
 실제 질의 처리 과정을 LangSmith로 추적한 결과입니다:
 
-![LangSmith Trace](langsmith_trace.png)
+![LangSmith Trace](langsmith.png)
 
 *질문 "교통사고 시 보상 범위는?"에 대한 전체 워크플로우 실행 추적*
 
