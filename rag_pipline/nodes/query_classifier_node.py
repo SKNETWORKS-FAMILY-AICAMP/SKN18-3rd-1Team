@@ -10,7 +10,7 @@ from openai import OpenAI
 
 client = OpenAI()
 
-INSURANCE_COMPANIES = ["현대", "하나", "삼성화재", "KB", "DB", "롯데"]
+INSURANCE_COMPANIES = ["현대", "하나", "삼성화재", "KB", "롯데"]
 INSURANCE_PRODUCTS = ["개인용자동차보험", "업무용자동차보험", "영업용자동차보험", "하루자동차보험", "이륜자동차보험"]
 
 class QueryClassifierNode:

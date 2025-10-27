@@ -208,7 +208,7 @@ if user_input:
 
         try:
             final_state = st.session_state.graph_app.invoke(state)
-            answer = final_state.get("final_answer", "답변 생성 실패")
+            answer = final_state.get("final_answer", "저희 서비스에서 제공하지 않는 질문입니다. 다시 질문해 주세요.")
             print("✅ [APP] 답변 생성 완료")
         except Exception as e:
             answer = f"⚠️ 오류 발생: {e}"
