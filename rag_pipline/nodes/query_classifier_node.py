@@ -2,18 +2,19 @@
 QueryClassifierNode
 ──────────────────────────────────────────────
 사용자의 질문이 단일 보험사 관련인지, 여러 보험사 비교인지, 기타인지 분류하고
-해당 보험사 목록(companies)을 함께 추출
+해당 보험사 목록(companies)과 상품명(products)을 함께 추출
 기타일 경우는 END
 ──────────────────────────────────────────────
 """
 from openai import OpenAI
 
 client = OpenAI()
-INSURANCE_COMPANIES = ["현대", "하나", "삼성화재", "KB", "DB", "롯데", "하나"]
+
+INSURANCE_COMPANIES = ["현대", "하나", "삼성화재", "KB", "DB", "롯데"]
 INSURANCE_PRODUCTS = ["개인용자동차보험", "업무용자동차보험", "영업용자동차보험", "하루자동차보험", "이륜자동차보험"]
 
 class QueryClassifierNode:
-    """질문 분류 + 보험사 추출 노드"""
+    """질문 분류 + 보험사 및 상품 추출 노드"""
 
     def __call__(self, state):
         query = state["user_input"]
@@ -82,22 +83,29 @@ class QueryClassifierNode:
         else:
             query_type = "other"
 
-        found = [c for c in INSURANCE_COMPANIES if c in query]
+        # ✅ 보험사 및 상품명 추출
+        found_companies = [c for c in INSURANCE_COMPANIES if c in query]
+        found_products = [p for p in INSURANCE_PRODUCTS if p.replace("자동차보험", "") in query or p in query]
 
+        # ✅ 비교질문일 경우 처리
         if query_type == "comparison":
-            if len(found) == 1:
-                companies = [c for c in INSURANCE_COMPANIES if c != found[0]]
+            if len(found_companies) == 1:
+                companies = [c for c in INSURANCE_COMPANIES if c != found_companies[0]]
             else:
-                companies = found
+                companies = found_companies
         elif query_type == "single":
-            companies = found[:1] if found else []
+            companies = found_companies[:1] if found_companies else []
         else:
             companies = []
 
+        # ✅ state 저장
         state["query_type"] = query_type
         state["companies"] = companies
-
+        state["products"] = found_products
         state["is_rag_eligible"] = query_type in ["single", "comparison"]
 
-        print(f"🧠 query_type={query_type}, companies={companies}, is_rag_eligible={state['is_rag_eligible']}")
+        print(
+            f"🧠 query_type={query_type}, companies={companies}, products={found_products}, is_rag_eligible={state['is_rag_eligible']}"
+        )
+
         return state

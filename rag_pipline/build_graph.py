@@ -23,6 +23,7 @@ class GraphState(TypedDict):
     user_input: str
     query_type: str
     companies: List[str]
+    products: List[str]
     retrieved_docs: Any
     meaningful_chunks: List[Any]
     evaluation_results: Any
