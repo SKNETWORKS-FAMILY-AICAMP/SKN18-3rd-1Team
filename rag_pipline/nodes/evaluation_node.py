@@ -69,11 +69,29 @@ class EvaluationNode:
 
 # Prompt 수정하기
     def _evaluate(self, query, content):
-        prompt = f"질문: {query}\n문서: {content[:700]}\n\n관련성 점수를 0~1 사이로 출력해."
+        prompt = f"""
+            다음은 사용자의 질문과 문서의 내용입니다.
+
+            질문:
+            {query}
+
+            문서:
+            {content[:1000]}
+
+            당신의 임무는 문서가 질문과 얼마나 직접적으로 관련이 있는지를 평가하는 것입니다.
+            0은 전혀 관련 없음, 1은 매우 밀접한 관련입니다.
+
+            예시:
+            질문: "보험료 납입일 변경 방법" / 문서: "보험료를 매달 자동이체로 납부할 수 있습니다." → 0.8
+            질문: "자동차 배터리 교체비용" / 문서: "보험료 납입 안내" → 0.1
+
+            0에서 1 사이의 숫자 하나만 출력하세요.
+            추가 설명은 하지 마세요.
+            """
+
         res = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0
+            model="gpt-5-nano",
+            messages=[{"role": "user", "content": prompt}]
         )
         text = res.choices[0].message.content
         match = re.search(r"([0-1](?:\.\d+)?)", text)
