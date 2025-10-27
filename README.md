@@ -1,236 +1,151 @@
+# 보험 상담 RAG 어시스턴트 (SKN18-3rd-1Team)
 
-# 운전자 보험 약관 RAG 챗봇 (SKN18-3rd-1Team)
-
-> "데이터로 약관을 읽다 — AI가 보험의 언어를 소비자 언어로 번역합니다."
-
-**프로젝트 기간:** 2025.10.24. – 2025.10.27.  
-
-**핵심 기술:** LangGraph · PGVector · PyMuPDF4LLM  
-
-**팀 구성:** 안시현 · 김수미 · 정동석 · 최은정
+보험 약관을 빠르게 분석해주는 LangGraph 기반 Retrieval-Augmented Generation(RAG) 파이프라인과 Streamlit 상담 UI를 제공합니다. 보험 상품 비교‧추천 상담 시 반복되는 질의에 신속하고 일관성 있는 답변을 제공하는 것이 목표입니다.
 
 ---
 
-## 🧭 프로젝트 개요
+## 개요
 
-운전자 보험 약관은 일반 가입자에게 너무 방대하고 난해합니다.  
+- **사용자 경험**: Streamlit 채팅 UI에서 자연어 질문 입력 → LangGraph 파이프라인이 관련 약관을 검색해 답변 생성
+- **데이터**: 자체 파싱한 보험 약관 PDF → CSV(`data/insurance_clauses.csv`) → pgvector 테이블에 임베딩 저장
+- **모델 파이프라인**:
+  1. 질문 분류(`QueryClassifierNode`)
+  2. pgvector 유사도 검색(`SearchVectorDBNode`)
+  3. 관련성 평가(`EvaluationNode`, 임계값 0.7)
+  4. 부족 시 질문 재작성(`RewriteNode`, 최대 1회)
+  5. 답변 생성(`CreateNode`) 및 근거 출처 표기
 
-수백 페이지의 문서 속에서 사용자가 원하는 정보를 직접 찾는 것은 현실적으로 불가능합니다.  
-
-우리 팀의 챗봇은 **약관의 구조적 특성을 이해하는 LangGraph 기반 RAG 시스템**으로,  
-
-사용자의 질문 의도에 맞춰 **정확한 조항 근거**를 함께 제시합니다.
-
----
-
-## ⚙️ 약관의 문제점
-
-| 문제 영역          | 구체적 내용                                                                                          |
-| ------------------ | ---------------------------------------------------------------------------------------------------- |
-| **방대한 분량**    | 각 보험사마다 평균 100~200페이지로 구성되어 초보 가입자가 직접 확인하기 어려움                       |
-| **전문 용어 난무** | 법률 용어와 조건문이 반복되어 문장 길이가 길고, 이해하기 어려움 (예: "단, 피보험자가 고의가 아닌 경우에 한하여…" 등) |
-| **잦은 개정**      | 개정 주기가 짧아 최신 약관 내용을 파악하기 어려움                                                    |
-| **정보 비대칭성**  | 보험사는 모든 정보를 보유하지만 가입자는 핵심 조항만 알고 있음                                       |
-| **불신 유발 구조** | "약관에 다 명시되어 있습니다"라는 관용구로 소비자가 불리한 상황 초래                                 |
+주요 구성 요소는 LangGraph, LangChain, OpenAI API, PostgreSQL + pgvector, PyMuPDF4LLM(약관 파서)입니다.
 
 ---
 
-## 💡 프로젝트 배경 및 목적
+## 저장소 구조
 
-### 1. 배경
-
-보험 약관의 복잡성은 '보험 소비자 권리'의 사각지대를 만들고 있습니다.  
-
-이에 우리 팀은 **AI 기반 문서 이해 구조화**를 통해 약관을 누구나 쉽게 탐색할 수 있도록 하는 것을 목표로 했습니다.
-
-### 2. 목적
-
-- **자연어 질의 기반 약관 탐색**: 사용자가 일상 언어로 질문해도 조항 근거를 반환  
-- **출처 신뢰 확보**: 답변마다 보험사명, 조항번호로 근거를 함께 제공  
-
----
-
-## 🎯 타겟 사용자
-
-### 1. 신규 보험 가입 검토자
-
-> **"어떤 보험이 나에게 맞을까?"**
-
-- **보험 초보자**: 운전자보험이 처음이라 어떤 보장이 필요한지 모르는 사용자
-- **비교 검토자**: 여러 보험사 상품을 비교하며 보장 내용을 꼼꼼히 확인하고 싶은 사용자
-- **설계사 상담 전 준비자**: 보험사 방문 전 미리 약관을 이해하고 질문을 준비하려는 사용자
-
-### 2. 기존 가입자 (약관 확인)
-
-> **"내 보험에 이런 보장이 있었나?"**
-
-- **사고 발생 시**: 실제 사고가 났을 때 본인의 보험 보장 범위를 급히 확인해야 하는 사용자
-- **보험금 청구 전**: 청구 가능한 항목과 필요 서류를 미리 파악하고 싶은 사용자
-- **갱신 검토자**: 기존 약관과 신규 약관의 차이점을 비교하며 갱신을 고민하는 사용자
-
----
-
-## 👥 팀 구성 및 역할
-
-| 이름                     | 역할                                | 주요 담당 모듈                                   | 세부 기여                                               |
-| ------------------------ | ----------------------------------- | ------------------------------------------------ | ------------------------------------------------------- |
-| **안시현 (Team Leader)** | 데이터 수집·전처리, 프론트엔드 설계 | `parse_preprocessing.py`, `streamlit_app.py`     | 약관 PDF → Markdown 파이프라인 구축, Streamlit UI 구성  |
-| **김수미**               | 노드 설계·임베딩                    | `embedding_models.py`, `search_vectordb_node.py` | 임베딩 모델 및 PGVector 저장 구조 구현                  |
-| **정동석**               | 평가 및 루프 튜닝                   | `evaluation_node.py`, `rewrite_node.py`          | Faithfulness·Relevancy 기반 평가, 질문 재작성 로직 구현 |
-| **최은정**               | LangGraph 워크플로우 설계           | `build_graph.py`, `create_node.py`               | 노드 간 데이터 흐름 제어, 루프 조건 설계                |
-
----
-
-## 🧠 기술 스택
-
-### 핵심 기술
-
-| 분야           | 기술                          | 역할                                |
-| -------------- | ----------------------------- | ----------------------------------- |
-| **AI 모델**    | GPT-4o-mini, GPT-5-nano       | 질문 분류, 답변 생성, 관련성 평가   |
-| **임베딩**     | OpenAI text-embedding-3-small | 문서 벡터화 및 유사도 검색          |
-| **워크플로우** | LangGraph                     | 노드 기반 RAG 파이프라인 구성       |
-| **벡터 DB**    | PostgreSQL + PGVector         | 고성능 벡터 검색 및 메타데이터 관리 |
-
-### 개발 환경
-
-| 항목            | 내용                                 |
-| --------------- | ------------------------------------ |
-| **언어**        | Python 3.13+                         |
-| **문서 처리**   | PyMuPDF4LLM (PDF→Markdown 변환)      |
-| **웹 UI**       | Streamlit                            |
-| **데이터 로드** | pandas (CSV 처리), numpy (점수 계산) |
-| **평가 시스템** | 자체 구현 (GPT-4o-mini 기반)         |
-
----
-
-## 📚 데이터 구성
-
-### 활용 문서
-
-DB손해보험, KB, 롯데, 삼성화재, 하나, 현대 운전자보험 약관 (직접 수집 및 전처리)
-
-### 전처리 파이프라인
-
-1. **PDF → Markdown 변환** (`PyMuPDF4LLM`)  
-2. **목차 영역 제거**  
-3. **편-장-절-조 계층 구조 파싱**  
-4. **조항 단위 데이터 분할**  
-5. **불필요한 텍스트(기호, 쪽번호 등) 제거**  
-6. **CSV 저장 (조항·내용·보험사·상품명 포함)**  
-
-### 데이터 특징
-
-| 항목                | 설명                                          |
-| ------------------- | --------------------------------------------- |
-| **조 단위 분할**    | 각 조항을 개별 행으로 나누어 검색 정확도 강화 |
-| **계층 정보 보존**  | 편 > 장 > 절 > 조 경로를 "조항" 컬럼에 기록   |
-| **내용만 임베딩**   | "내용" 컬럼만 임베딩하여 유사도 계산 수행     |
-| **메타데이터 활용** | 보험사, 상품명, 조항경로를 필터링에 사용      |
-
----
-
-## 🧩 LangGraph 워크플로우
-
-```
-start → query_classifier → search_vectordb → evaluation → 
-(pass: create_answer / fail: rewrite_question → search_vectordb) → end
-```
-
-![Graph Structure](graph_structure.png)
-
-### LangSmith 모니터링
-
-> **실시간 워크플로우 추적**
->
-> LangSmith를 통해 각 노드의 실행 과정과 성능을 실시간으로 모니터링합니다.
->
-> ![LangSmith Dashboard](langsmith_dashboard.png)
->
-> *LangSmith 대시보드에서 확인할 수 있는 워크플로우 실행 추적*
-
-### 노드별 기능 요약
-
-| 노드                 | 설명                                              |
-| -------------------- | ------------------------------------------------- |
-| **query_classifier** | 질문 유형 분류 및 비보험 관련 질문 필터링         |
-| **search_vectordb**  | PGVector 기반 유사도 검색 및 상위 문맥 추출       |
-| **evaluation**       | 질문-문서 관련성 점수 평가 (0~1 점수, 임계값 0.7) |
-| **rewrite_question** | 점수 미달 시 질문 의미 재작성 및 재검색           |
-| **create_answer**    | LLM이 최종 요약 및 출처 포함 답변 생성            |
-
----
-
-## 📁 프로젝트 구조
-
-```
-
-
+```text
+.
+├─app.py                     # Streamlit 진입점
+├─rag_pipline/               # LangGraph 파이프라인 및 벡터스토어 래퍼
+│   ├─build_graph.py         # 그래프 정의(StateGraph)
+│   ├─nodes/                 # LangGraph 노드(분류, 검색, 평가, 재작성, 생성)
+│   ├─vectordb/custom_pgvector.py
+│   └─vector_store.py        # CSV → pgvector 적재 스크립트
+├─scripts/
+│   ├─run_graph.py           # CLI 파이프라인 실행기
+│   └─draw_graph.py          # LangGraph 구조 PNG 생성
+├─pgvector/
+│   ├─docker-compose.yml     # PostgreSQL + pgvector 서비스
+│   └─init.sql               # 초기 테이블 스키마
+├─data/                      # 파싱된 약관 CSV + 원천 PDF(회사별 폴더)
+├─dongsuk/, sihyun/          # 실험용 RAG 파이프라인·파서 코드
+├─requirements.txt
+└─graph_structure.png        # LangGraph 다이어그램 예시
 ```
 
 ---
 
-## 🧪 평가 체계
+## LangGraph 파이프라인
 
-> **평가 방식**  
->
-> - **관련성 점수**: GPT-4o-mini를 활용한 질문-문서 관련성 평가 (0~1 점수)
-> - **임계값 기반 필터링**: 0.7 이상 점수를 받은 문서만 답변 생성에 활용
-> - **자동 재검색**: 유의미한 문서가 없을 경우 질문 재작성 후 재검색 (max = 1)
->
-> `evaluation_node.py`의 점수 계산 로직에 따라 자동화
+| 노드 | 역할 | 세부 내용 |
+| --- | --- | --- |
+| `QueryClassifierNode` | 질의 분류 | `single`/`comparison`/`other` 분류, 비교 대상 보험사 추출 |
+| `SearchVectorDBNode` | 문서 검색 | pgvector에서 회사 필터 기반 유사도 검색 |
+| `EvaluationNode` | 관련성 평가 | OpenAI 모델로 chunk relevance(0~1) 산출, 평균 0.7 ↑ 시 통과 |
+| `RewriteNode` | 질문 재작성 | 관련성이 낮으면 1회까지 질문 재작성 후 재검색 |
+| `CreateNode` | 답변 생성 | 관련 chunks 기반 답변 작성, 사용된 회사·상품 정보를 출처로 표시 |
 
----
-
-## 💻 사용자 인터페이스
-
-> **Streamlit 기반 웹 애플리케이션**
->
-> - **좌측 사이드바:** 보험사 필터, 검색 옵션 설정  
-> - **메인 화면:**  
->     - 질문 입력창
->     - 답변 카드 (요약 + 출처 조항 표시)  
->     - 관련성 점수 시각화
-
-![Streamlit UI](streamlit_ui.png)
-
-*사용자 친화적인 Streamlit 웹 인터페이스*
+`graph_structure.png` 또는 `python scripts/draw_graph.py` 실행으로 파이프라인을 시각화할 수 있습니다.
 
 ---
 
-## 🔍 시스템 모니터링
+## 실행 준비
 
-### LangSmith 추적 결과
+### 1. 사전 요구 사항
 
-실제 질의 처리 과정을 LangSmith로 추적한 결과입니다:
+- Python 3.10 이상
+- Docker & Docker Compose
+- OpenAI API Key (텍스트 임베딩/모델 호출용)
 
-![LangSmith Trace](langsmith_trace.png)
+### 2. 의존성 설치
 
-*질문 "교통사고 시 보상 범위는?"에 대한 전체 워크플로우 실행 추적*
+```bash
+python -m venv .venv
+.venv\Scripts\activate           # PowerShell 예시
+pip install -r requirements.txt
+```
+
+### 3. 환경 변수
+
+루트에 `.env` 파일을 생성해 API 키와 선택 옵션을 설정합니다.
+
+```env
+OPENAI_API_KEY=sk-...
+EMBEDDING_MODEL=text-embedding-3-large   # 필요 시 변경
+CONNECTION_STRING=postgresql://admin:admin123@localhost:5432/UNITvectordb
+```
+
+`rag_pipline/custom_pgvector.py`는 `EMBEDDING_MODEL`이 없을 경우 기본값을 사용하며, `dongsuk/vectordb` 모듈은 `CONNECTION_STRING`을 참조합니다.
+
+### 4. pgvector 데이터베이스 기동
+
+```bash
+cd pgvector
+docker compose up -d
+```
+
+- 기본 접속 정보: `admin / admin123`, 데이터베이스 `UNITvectordb`
+- 최초 실행 시 `init.sql`이 `insurance_embeddings` 테이블을 생성합니다.
+
+### 5. 임베딩 적재
+
+```bash
+python rag_pipline/vector_store.py
+```
+
+- `data/insurance_clauses.csv`를 chunk로 분할 후 OpenAI 임베딩을 생성해 `insurance_embeddings` 테이블에 저장합니다.
+- OpenAI API 호출 비용이 발생하므로 키와 모델 설정을 확인하세요.
+
+### 6. Streamlit 앱 실행
+
+```bash
+streamlit run app.py
+```
+
+브라우저에서 챗 UI가 열립니다. 최초 요청 시 pgvector 연결과 LangGraph 컴파일이 진행됩니다.
 
 ---
 
-## 🔮 향후 발전 방향
+## 추가 실행 옵션
+
+- **CLI 테스트**: `python scripts/run_graph.py` 실행 후 콘솔에서 질문을 입력해 파이프라인을 테스트할 수 있습니다.
+- **그래프 PNG 출력**: `python scripts/draw_graph.py` 실행 시 `graph_structure.png` 파일이 갱신됩니다. (Mermaid 렌더링을 위해 LangGraph의 `xray` 기능 사용)
 
 ---
 
-본 프로젝트는 **보험 약관 이해도 개선을 위한 연구 목적**이며,  
+## 데이터 파이프라인
 
-법률적 자문이나 계약 효력을 대체하지 않습니다.  
+- `sihyun/parsers/`에 보험사/상품별 PDF 파서가 정리되어 있으며, `preprocess_v2.py`가 PDF → CSV 변환을 담당합니다.
+- `data/` 하위에 보험사별 원천 PDF와 변환 결과 CSV(`insurance_clauses.csv`)가 위치합니다.
+- 필요 시 새로운 PDF를 추가하고 파서를 확장해 CSV를 재생성한 뒤 `vector_store.py`로 임베딩을 새로 구축하세요.
 
-원문 약관 및 보험사 공식 자료를 항상 병행하여 확인하시기 바랍니다.
+---
+
+## 실험용 모듈
+
+- `dongsuk/` 폴더에는 초기 LangGraph 프로토타입과 모듈화된 vector DB 래퍼가 포함돼 있습니다.
+- `rag_pipline/`의 본 파이프라인과 비교하며 커스터마이징 할 수 있습니다.
 
 ---
 
-## ⭐ 느낀점
+## 문제 해결 가이드
 
-**SKN18-3rd-1Team**
-
-- 안시현 (Team Leader): 
-- 김수미: 
-- 정동석: 
-- 최은정: 
+- **DB 연결 오류**: `docker compose ps`로 컨테이너 상태를 확인하고, `.env`의 `CONNECTION_STRING`과 `app.py` 내 `CONN_STR`이 동일한지 확인하세요.
+- **OpenAI Rate Limit**: 임베딩 적재·답변 생성은 OpenAI 호출을 사용합니다. 키 권한과 요청 빈도를 점검하세요.
+- **그래프 재컴파일 지연**: Streamlit 실행 시 LangGraph가 최초 1회 컴파일되므로 초기 요청이 다소 지연될 수 있습니다.
 
 ---
+
+## 문의
+
+SKN18-3rd-1Team – 프로젝트 관련 문의는 팀 리더 또는 저장소 이슈를 통해 전달해주세요.
 
 *Made with ❤️ by SKN18-3rd-1Team*

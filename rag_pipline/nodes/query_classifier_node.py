@@ -9,7 +9,8 @@ QueryClassifierNode
 from openai import OpenAI
 
 client = OpenAI()
-INSURANCE_COMPANIES = ["현대", "삼성화재", "KB", "DB", "롯데", "하나"]
+INSURANCE_COMPANIES = ["현대", "삼성화재", "KB", "롯데", "하나"]
+INSURANCE_PRODUCT = ['개인', '업무', '영업,','원데이', '이륜차']
 
 
 class QueryClassifierNode:
@@ -30,9 +31,9 @@ class QueryClassifierNode:
 2. comparison
     - 두 개 이상의 보험사 또는 상품을 명시하고, 서로 비교하거나 추천을 요청하는 질문
     - 한 개 보험사만 언급되더라도 다른 보험과 비교하거나 추천을 묻는 경우
+    - 보험사 명이 언급되지 않더라도 '추천' 이라는 단어가 질문에 나올경우
     - 예시: "삼성화재와 현대해상의 자동차보험 중 어느 것이 더 낫나요?"
     - 예시: "삼성화재 자동차보험과 다른 보험사를 비교해서 추천해 주세요"
-
 3. other
     - 보험사 언급이 없거나, 질문이 불분명하여 single/comparison으로 분류할 수 없는 경우
     - 보험과 관련 없는 질문도 포함
