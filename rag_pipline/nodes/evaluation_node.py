@@ -14,7 +14,7 @@ client = OpenAI()
 
 
 class EvaluationNode:
-    def __init__(self, threshold: float = 0.7):
+    def __init__(self, threshold: float = 0.1):
         self.threshold = threshold
 
     def __call__(self, state):
