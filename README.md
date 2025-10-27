@@ -197,8 +197,7 @@ start → query_classifier → search_vectordb → evaluation
 
 #### LangSmith 모니터링
 > LangSmith를 통해 각 노드의 실행 과정과 성능을 실시간으로 모니터링합니다.
-> *LangSmith 대시보드에서 확인할 수 있는 워크플로우 실행 추적*
-> ![LangSmith Dashboard](readme_img/langsmith.png)
+> ![LangSmith Dashboard](langsmith.png)
 
 
 ---
